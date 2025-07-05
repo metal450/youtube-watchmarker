@@ -501,8 +501,25 @@ let History = {
                             objResult.title = objResult.title.slice(0, -10)
                         }
 
+                        // Extract video ID
+                        let videoId = objResult.url.split('&')[0].slice(-11);
+                        
+                        // Log which videos are being added from history
+                        chrome.tabs.query({
+                            'url': '*://*.youtube.com/*'
+                        }, function(objTabs) {
+                            if (objTabs.length > 0) {
+                                funcSendmessage(objTabs[0].id, {
+                                    'strMessage': 'youtubeLogHistory',
+                                    'videoId': videoId,
+                                    'title': objResult.title,
+                                    'url': objResult.url
+                                });
+                            }
+                        });
+                        
                         objVideos.push({
-                            'strIdent': objResult.url.split('&')[0].slice(-11),
+                            'strIdent': videoId,
                             'intTimestamp': objResult.lastVisitTime,
                             'strTitle': objResult.title,
                             'intCount': objResult.visitCount
@@ -1026,6 +1043,20 @@ let Youtube = {
     mark: function(objRequest, funcResponse) {
         // This log will show which video is being marked without showing the condition
         // The condition-specific logs will show which condition triggered the marking
+        
+        // Log when a video is being marked through Youtube.mark
+        chrome.tabs.query({
+            'url': '*://*.youtube.com/*'
+        }, function(objTabs) {
+            if (objTabs.length > 0) {
+                chrome.tabs.sendMessage(objTabs[0].id, {
+                    'strMessage': 'youtubeLogHistory',
+                    'videoId': objRequest.strIdent,
+                    'title': objRequest.strTitle || 'Unknown',
+                    'url': 'Direct mark via Youtube.mark'
+                });
+            }
+        });
         
         Node.series({
             'objVideo': function(objArgs, funcCallback) {
@@ -1610,6 +1641,20 @@ Node.series({
                     strTitlecache[objRequest.strIdent] = objRequest.strTitle;
                 }
 
+                // Log when a video is being ensured via progresshook
+                chrome.tabs.query({
+                    'url': '*://*.youtube.com/*'
+                }, function(objTabs) {
+                    if (objTabs.length > 0) {
+                        chrome.tabs.sendMessage(objTabs[0].id, {
+                            'strMessage': 'youtubeLogHistory',
+                            'videoId': objRequest.strIdent,
+                            'title': objRequest.strTitle || 'Unknown',
+                            'url': 'Progress Hook via youtubeEnsure'
+                        });
+                    }
+                });
+                
                 Youtube.ensure({
                     'strIdent': objRequest.strIdent,
                     'strTitle': objRequest.strTitle

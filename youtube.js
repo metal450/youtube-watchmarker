@@ -82,6 +82,23 @@ let videos = function(strIdent) {
         'a[data-vid="' + strIdent + '"]', // mobile with data-vid attribute
     ];
     
+    // // Log which selectors are matching for debugging
+    // if (strIdent) {
+    //     for (let i = 0; i < selectors.length; i++) {
+    //         let matches = window.document.querySelectorAll(selectors[i]);
+    //         if (matches.length > 0) {
+    //             log('SELECTOR MATCH for ' + strIdent + ': ' + selectors[i] + ' - ' + matches.length + ' matches');
+                
+    //             // Log the URLs of the first few matches for the very permissive selector
+    //             if (selectors[i].includes('a[href*="' + strIdent + '"]') && matches.length > 0) {
+    //                 for (let j = 0; j < Math.min(3, matches.length); j++) {
+    //                     log('PERMISSIVE MATCH URL: ' + matches[j].href);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+    
     let result = Array.from(window.document.querySelectorAll(selectors.join(', ')));
     return result;
 };
@@ -172,6 +189,7 @@ let refresh = function() {
             'strTitle': strTitle
         }, function(objResponse) {
             if (objResponse !== null) {
+                log('Adding to history (youtubeLookup): ' + objResponse.strIdent + ' - Title: ' + strTitle);
                 intWatchdate[objResponse.strIdent] = objResponse.intTimestamp;
 
                 for (let objVideo of videos(objResponse.strIdent)) {
@@ -225,6 +243,10 @@ chrome.runtime.onMessage.addListener(function(objData, objSender, funcResponse) 
     if (objData.strMessage === 'youtubeRefresh') {
         refresh();
 
+    } else if (objData.strMessage === 'youtubeLogHistory') {
+        // Log videos being added from browser history
+        log('BROWSER HISTORY: Adding video ' + objData.videoId + ' - Title: ' + objData.title + ' - URL: ' + objData.url);
+        
     } else if (objData.strMessage === 'youtubeMark') {
         // Get the title if available
         let videoTitle = objData.strTitle || '';
