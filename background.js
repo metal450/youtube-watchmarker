@@ -1024,6 +1024,9 @@ let Youtube = {
     },
 
     mark: function(objRequest, funcResponse) {
+        // This log will show which video is being marked without showing the condition
+        // The condition-specific logs will show which condition triggered the marking
+        
         Node.series({
             'objVideo': function(objArgs, funcCallback) {
                 return funcCallback(objRequest);
@@ -1597,7 +1600,6 @@ Node.series({
                     'strIdent': objRequest.strIdent,
                     'strTitle': objRequest.strTitle
                 }, function(objResponse) {
-
                     funcResponse(objResponse);
                 });
 
@@ -1657,7 +1659,19 @@ Node.series({
                         }
                         
                         let strTitle = objChange.title;
-                        
+                        // Send a message to content script for logging
+                        chrome.tabs.query({
+                            'url': '*://*.youtube.com/*'
+                        }, function(objTabs) {
+                            for (let objTab of objTabs) {
+                                funcSendmessage(objTab.id, {
+                                    'strMessage': 'youtubeLogCondition',
+                                    'condition': 'Browser Navigation',
+                                    'strIdent': strIdent,
+                                    'strTitle': strTitle
+                                });
+                            }
+                        });
 
                         Youtube.mark({
                             'strIdent': strIdent,
@@ -1974,11 +1988,24 @@ Node.series({
 
                     }
 
+                    // Send a message to content script for logging
+                    chrome.tabs.query({
+                        'url': '*://*.youtube.com/*'
+                    }, function(objTabs) {
+                        for (let objTab of objTabs) {
+                            funcSendmessage(objTab.id, {
+                                'strMessage': 'youtubeLogCondition',
+                                'condition': 'YouTube Progress',
+                                'strIdent': strIdent,
+                                'strTitle': strTitle
+                            });
+                        }
+                    });
+                    
                     Youtube.ensure({
                         'strIdent': strIdent,
                         'strTitle': strTitle
                     }, function(objResponse) {
-                        console.debug('ensure video');
                     });
 
                     chrome.tabs.query({
@@ -2010,20 +2037,42 @@ Node.series({
         chrome.alarms.onAlarm.addListener(function(objAlarm) {
             if (objAlarm.name === 'synchronize') {
                 if (window.localStorage.getItem('extensions.Youwatch.Condition.boolBrowhist') === String(true)) {
+                    // Send a message to content script for logging
+                    chrome.tabs.query({
+                        'url': '*://*.youtube.com/*'
+                    }, function(objTabs) {
+                        for (let objTab of objTabs) {
+                            funcSendmessage(objTab.id, {
+                                'strMessage': 'youtubeLogCondition',
+                                'condition': 'Browser History',
+                                'strIdent': 'Synchronizing'
+                            });
+                        }
+                    });
                     History.synchronize({
                         'intTimestamp': new Date().getTime() - (7 * 24 * 60 * 60 * 1000)
                     }, function(objResponse) {
-                        console.debug('synchronized history');
                     }, function(objResponse) {
                         // ...
                     });
                 }
 
                 if (window.localStorage.getItem('extensions.Youwatch.Condition.boolYouhist') === String(true)) {
+                    // Send a message to content script for logging
+                    chrome.tabs.query({
+                        'url': '*://*.youtube.com/*'
+                    }, function(objTabs) {
+                        for (let objTab of objTabs) {
+                            funcSendmessage(objTab.id, {
+                                'strMessage': 'youtubeLogCondition',
+                                'condition': 'YouTube History',
+                                'strIdent': 'Synchronizing'
+                            });
+                        }
+                    });
                     Youtube.synchronize({
                         'intThreshold': 512
                     }, function(objResponse) {
-                        console.debug('synchronized youtube');
                     }, function(objResponse) {
                         // ...
                     });

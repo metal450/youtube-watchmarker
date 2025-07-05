@@ -9,6 +9,41 @@ let lastRefreshTime = 0; // Throttle refreshes
 // ##########################################################
 
 let videos = function(strIdent) {
+    // Only log when we're looking for a specific video ID and it's being marked
+    if (strIdent && strIdent.length === 11) {
+        // Add a debug log to count elements found by each selector
+        let selectorCounts = {};
+        
+        let selectors = [
+            'a.ytd-thumbnail[href^="/watch?v=' + strIdent + '"]', // regular
+            'a.yt-lockup-view-model-wiz__content-image[href^="/watch?v=' + strIdent + '"]', // regular
+            'ytd-compact-video-renderer a.yt-simple-endpoint[href^="/watch?v=' + strIdent + '"]', // regular
+            'a.ytp-ce-covering-overlay[href*="/watch?v=' + strIdent + '"]', // overlays
+            'a.ytp-videowall-still[href*="/watch?v=' + strIdent + '"]', // videowall
+            'a.ytd-thumbnail[href^="/shorts/' + strIdent + '"]', // shorts
+            'a.ShortsLockupViewModelHostEndpoint[href^="/shorts/' + strIdent + '"]', // shorts
+            'a.reel-item-endpoint[href^="/shorts/' + strIdent + '"]', // shorts
+            // Mobile selectors - more permissive to catch all variations
+            'a.media-item-thumbnail-container[href*="' + strIdent + '"]', // mobile thumbnails
+            'a.media-item-extra-endpoint[href*="' + strIdent + '"]', // mobile extra endpoints
+            'a[href*="/watch?v=' + strIdent + '"]', // any link with the video ID
+            'a[href*="' + strIdent + '"]', // any link containing the video ID - VERY PERMISSIVE
+            'a[data-vid="' + strIdent + '"]', // mobile with data-vid attribute
+        ];
+        
+        // Count matches for each selector individually
+        for (let i = 0; i < selectors.length; i++) {
+            let count = window.document.querySelectorAll(selectors[i]).length;
+            if (count > 0) {
+                selectorCounts[i] = count;
+            }
+        }
+        
+        // Only log if we found matches
+        if (Object.keys(selectorCounts).length > 0) {
+            console.log('SELECTORS for ' + strIdent + ': ' + JSON.stringify(selectorCounts));
+        }
+    }
     
     let selectors = [
         'a.ytd-thumbnail[href^="/watch?v=' + strIdent + '"]', // regular
@@ -23,7 +58,7 @@ let videos = function(strIdent) {
         'a.media-item-thumbnail-container[href*="' + strIdent + '"]', // mobile thumbnails
         'a.media-item-extra-endpoint[href*="' + strIdent + '"]', // mobile extra endpoints
         'a[href*="/watch?v=' + strIdent + '"]', // any link with the video ID
-        'a[href*="' + strIdent + '"]', // any link containing the video ID
+        'a[href*="' + strIdent + '"]', // any link containing the video ID - VERY PERMISSIVE
         'a[data-vid="' + strIdent + '"]', // mobile with data-vid attribute
     ];
     
@@ -171,6 +206,10 @@ chrome.runtime.onMessage.addListener(function(objData, objSender, funcResponse) 
         refresh();
 
     } else if (objData.strMessage === 'youtubeMark') {
+        // Get the title if available
+        let videoTitle = objData.strTitle || '';
+        console.log('MARKED VIDEO: ' + objData.strIdent + ' - Title: ' + videoTitle);
+        
         intWatchdate[objData.strIdent] = objData.intTimestamp;
 
         let videoElements = videos(objData.strIdent);
@@ -178,6 +217,10 @@ chrome.runtime.onMessage.addListener(function(objData, objSender, funcResponse) 
             mark(objVideo, objData.strIdent);
         }
 
+    } else if (objData.strMessage === 'youtubeLogCondition') {
+        // Use the title if provided in the message
+        let titleInfo = objData.strTitle ? ' - Title: ' + objData.strTitle : '';
+        console.log('CONDITION: ' + objData.condition + ' - Video ID: ' + objData.strIdent + titleInfo);
     }
 
     funcResponse(null);
