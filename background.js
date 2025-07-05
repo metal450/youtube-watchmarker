@@ -1125,27 +1125,6 @@ let Search = {
     },
 
     lookup: function(objRequest, funcResponse) {
-
-        // Add a debug function to dump the entire database contents
-        try {
-            let dbStore = Database.objDatabase.transaction(['storeDatabase'], 'readonly').objectStore('storeDatabase');
-            let request = dbStore.openCursor();
-            let allItems = [];
-            
-            request.onsuccess = function(event) {
-                let cursor = event.target.result;
-                if (cursor) {
-                    allItems.push(cursor.value);
-                    cursor.continue();
-                } else {
-                }
-            };
-            
-            request.onerror = function(event) {
-            };
-        } catch (e) {
-        }
-        
         Node.series({
             'objDatabase': function(objArgs, funcCallback) {
                 return funcCallback(Database.objDatabase.transaction(['storeDatabase'], 'readonly').objectStore('storeDatabase'));
