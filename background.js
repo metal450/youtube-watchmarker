@@ -1572,20 +1572,7 @@ Node.series({
     },
     'objMessage': function(objArgs, funcCallback) {
         chrome.runtime.onMessage.addListener(function(objRequest, objSender, funcResponse) {
-            if (objRequest.strMessage === 'dumpDatabase') {
-
-                // Get all YouTube video entries
-                let dbEntries = {};
-                for (let i = 0; i < window.localStorage.length; i++) {
-                    const key = window.localStorage.key(i);
-                    if (key.startsWith('extensions.Youwatch.Youtube.')) {
-                        dbEntries[key] = window.localStorage.getItem(key);
-                    }
-                }
-                
-                funcResponse(dbEntries);
-                return true; // indicate asynchronous response
-            } else if (objRequest.strMessage === 'youtubeLookup') {
+            if (objRequest.strMessage === 'youtubeLookup') {
                 if (objRequest.strTitle !== '') {
                     strTitlecache[objRequest.strIdent] = objRequest.strTitle;
                 }
