@@ -266,13 +266,45 @@ let Database = {
                 };
             },
             'objDownload': function(objArgs, funcCallback) {
-                chrome.downloads.download({
-                    'url' : URL.createObjectURL(new Blob([btoa(unescape(encodeURIComponent(JSON.stringify(objArgs.objGet))))], {
-                        'type': 'application/octet-stream'
-                    })),
-                    'filename': new Date().getFullYear() + '.' + ('0' + (new Date().getMonth() + 1)).slice(-2) + '.' + ('0' + new Date().getDate()).slice(-2) + '.database',
-                    'saveAs': true
-                });
+                // Create the database content
+                const dbContent = btoa(unescape(encodeURIComponent(JSON.stringify(objArgs.objGet))));
+                
+                // Generate filename
+                const filename = new Date().getFullYear() + '.' + ('0' + (new Date().getMonth() + 1)).slice(-2) + '.' + ('0' + new Date().getDate()).slice(-2) + '.database';
+                
+                // Store the database content and filename in local storage for the options page to access
+                localStorage.setItem('pendingExport', dbContent);
+                localStorage.setItem('pendingExportFilename', filename);
+                
+                // On desktop, try to use the downloads API
+                if (funcBrowser() === 'firefox' && typeof browser !== 'undefined' && browser.runtime.getPlatformInfo) {
+                    browser.runtime.getPlatformInfo().then(info => {
+                        if (info.os !== 'android') {
+                            // Desktop Firefox - use downloads API
+                            chrome.downloads.download({
+                                'url': URL.createObjectURL(new Blob([dbContent], {
+                                    'type': 'application/octet-stream'
+                                })),
+                                'filename': filename,
+                                'saveAs': true
+                            });
+                        }
+                        // For Android, the download will be handled by the options page
+                    });
+                } else {
+                    // Chrome or other browsers - use downloads API
+                    try {
+                        chrome.downloads.download({
+                            'url': URL.createObjectURL(new Blob([dbContent], {
+                                'type': 'application/octet-stream'
+                            })),
+                            'filename': filename,
+                            'saveAs': true
+                        });
+                    } catch (e) {
+                        console.error("Download API failed:", e);
+                    }
+                }
 
                 return funcCallback({});
             }
