@@ -914,21 +914,17 @@ let Youtube = {
     },
 
     lookup: function(objRequest, funcResponse) {
-        console.log('[Youtube Watchmarker Background] Youtube.lookup called with:', objRequest);
         Node.series({
             'objVideo': function(objArgs, funcCallback) {
                 return funcCallback(objRequest);
             },
             'objDatabase': function(objArgs, funcCallback) {
-                console.log('[Youtube Watchmarker Background] Getting database store');
                 return funcCallback(Database.objDatabase.transaction(['storeDatabase'], 'readonly').objectStore('storeDatabase'));
             },
             'objGet': function(objArgs, funcCallback) {
-                console.log('[Youtube Watchmarker Background] Looking up video in database:', objArgs.objVideo.strIdent);
                 let objQuery = objArgs.objDatabase.index('strIdent').get(objArgs.objVideo.strIdent);
 
                 objQuery.onsuccess = function() {
-                    console.log('[Youtube Watchmarker Background] Database lookup result:', objQuery.result);
                     if ((objQuery.result !== undefined) && (objQuery.result !== null)) {
                         return funcCallback({
                             'strIdent': objQuery.result.strIdent,
@@ -1012,23 +1008,18 @@ let Youtube = {
     },
 
     mark: function(objRequest, funcResponse) {
-        console.log('[Youtube Watchmarker Background] Youtube.mark called with:', objRequest);
         Node.series({
             'objVideo': function(objArgs, funcCallback) {
                 return funcCallback(objRequest);
             },
             'objDatabase': function(objArgs, funcCallback) {
-                console.log('[Youtube Watchmarker Background] Getting database store for marking');
                 return funcCallback(Database.objDatabase.transaction(['storeDatabase'], 'readwrite').objectStore('storeDatabase'));
             },
             'objGet': function(objArgs, funcCallback) {
-                console.log('[Youtube Watchmarker Background] Looking up video in database for marking:', objArgs.objVideo.strIdent);
                 let objQuery = objArgs.objDatabase.index('strIdent').get(objArgs.objVideo.strIdent);
 
                 objQuery.onsuccess = function() {
-                    console.log('[Youtube Watchmarker Background] Database lookup result for marking:', objQuery.result);
                     if ((objQuery.result === undefined) || (objQuery.result === null)) {
-                        console.log('[Youtube Watchmarker Background] Adding new video to database:', objArgs.objVideo.strIdent);
                         return funcCallback({
                             'strIdent': objArgs.objVideo.strIdent,
                             'intTimestamp': objArgs.objVideo.intTimestamp || new Date().getTime(),
@@ -1037,7 +1028,6 @@ let Youtube = {
                         });
 
                     } else if ((objQuery.result !== undefined) && (objQuery.result !== null)) {
-                        console.log('[Youtube Watchmarker Background] Updating existing video in database:', objArgs.objVideo.strIdent);
                         return funcCallback({
                             'strIdent': objQuery.result.strIdent,
                             'intTimestamp': objArgs.objVideo.intTimestamp || objQuery.result.intTimestamp || new Date().getTime(),
@@ -1049,13 +1039,10 @@ let Youtube = {
                 };
             },
             'objPut': function(objArgs, funcCallback) {
-                console.log('[Youtube Watchmarker Background] Attempting to put video in database:', objArgs.objGet);
                 if (objArgs.objGet.strIdent.trim() === '') {
-                    console.log('[Youtube Watchmarker Background] Empty video ID, not saving');
                     return funcCallback({});
 
                 } else if (objArgs.objGet.strTitle.trim() === '') {
-                    console.log('[Youtube Watchmarker Background] Empty video title, not saving');
                     return funcCallback({});
 
                 }
@@ -1063,12 +1050,10 @@ let Youtube = {
                 let objQuery = objArgs.objDatabase.put(objArgs.objGet);
 
                 objQuery.onsuccess = function() {
-                    console.log('[Youtube Watchmarker Background] Successfully saved video to database:', objArgs.objGet.strIdent);
                     return funcCallback({});
                 };
                 
                 objQuery.onerror = function(event) {
-                    console.log('[Youtube Watchmarker Background] Error saving video to database:', event, objArgs.objGet.strIdent);
                     return funcCallback({});
                 };
             },
@@ -1101,9 +1086,7 @@ let Search = {
                     if (objPort.name === 'search') {
                         objPort.onMessage.addListener(function(objData) {
                             if (objData.strMessage === 'searchLookup') {
-                                console.log('[Youtube Watchmarker Background] Received searchLookup request:', objData.objRequest);
                                 Search.lookup(objData.objRequest, function(objResponse) {
-                                    console.log('[Youtube Watchmarker Background] Search results:', objResponse);
                                     objPort.postMessage({
                                         'strMessage': 'searchLookup',
                                         'objResponse': objResponse
@@ -1142,10 +1125,8 @@ let Search = {
     },
 
     lookup: function(objRequest, funcResponse) {
-        console.log('[Youtube Watchmarker Background] Search.lookup called with:', objRequest);
-        
+
         // Add a debug function to dump the entire database contents
-        console.log('[Youtube Watchmarker Background] Dumping entire database for debugging');
         try {
             let dbStore = Database.objDatabase.transaction(['storeDatabase'], 'readonly').objectStore('storeDatabase');
             let request = dbStore.openCursor();
@@ -1157,24 +1138,19 @@ let Search = {
                     allItems.push(cursor.value);
                     cursor.continue();
                 } else {
-                    console.log('[Youtube Watchmarker Background] All database items:', allItems);
                 }
             };
             
             request.onerror = function(event) {
-                console.log('[Youtube Watchmarker Background] Error dumping database:', event);
             };
         } catch (e) {
-            console.log('[Youtube Watchmarker Background] Exception dumping database:', e);
         }
         
         Node.series({
             'objDatabase': function(objArgs, funcCallback) {
-                console.log('[Youtube Watchmarker Background] Getting database store for search');
                 return funcCallback(Database.objDatabase.transaction(['storeDatabase'], 'readonly').objectStore('storeDatabase'));
             },
             'objGet': function(objArgs, funcCallback) {
-                console.log('[Youtube Watchmarker Background] Searching database with query:', objRequest.strQuery);
                 let objQuery = objArgs.objDatabase.index('intTimestamp').openCursor(null, 'prev');
 
                 objQuery.skip = objRequest.intSkip;
@@ -1182,12 +1158,10 @@ let Search = {
 
                 objQuery.onsuccess = function() {
                     if ((objQuery.result === undefined) || (objQuery.result === null)) {
-                        console.log('[Youtube Watchmarker Background] Search complete, found', objQuery.results.length, 'results');
                         return funcCallback(objQuery.results);
                     }
 
                     if (objQuery.results.length === objRequest.intLength) {
-                        console.log('[Youtube Watchmarker Background] Search reached limit of', objRequest.intLength, 'results');
                         return funcCallback(objQuery.results);
                     }
 
@@ -1196,7 +1170,6 @@ let Search = {
                             objQuery.skip -= 1;
 
                         } else if (objQuery.skip === 0) {
-                            console.log('[Youtube Watchmarker Background] Adding video to search results:', objQuery.result.value.strIdent, objQuery.result.value.strTitle);
                             objQuery.results.push({
                                 'strIdent': objQuery.result.value.strIdent,
                                 'intTimestamp': objQuery.result.value.intTimestamp,
@@ -1506,7 +1479,6 @@ Node.series({
         if (window.localStorage.getItem('extensions.Youwatch.Condition.boolBrownav') === null) {
             window.localStorage.setItem('extensions.Youwatch.Condition.boolBrownav', String(true));
         }
-        console.log('[Youtube Watchmarker Background] Browser navigation tracking setting:', window.localStorage.getItem('extensions.Youwatch.Condition.boolBrownav'));
 
         if (window.localStorage.getItem('extensions.Youwatch.Condition.boolBrowhist') === null) {
             window.localStorage.setItem('extensions.Youwatch.Condition.boolBrowhist', String(true));
@@ -1622,8 +1594,7 @@ Node.series({
     'objMessage': function(objArgs, funcCallback) {
         chrome.runtime.onMessage.addListener(function(objRequest, objSender, funcResponse) {
             if (objRequest.strMessage === 'dumpDatabase') {
-                console.log('[Youtube Watchmarker Background] Received dumpDatabase message');
-                
+
                 // Get all YouTube video entries
                 let dbEntries = {};
                 for (let i = 0; i < window.localStorage.length; i++) {
@@ -1633,11 +1604,9 @@ Node.series({
                     }
                 }
                 
-                console.log('[Youtube Watchmarker Background] Database entries:', dbEntries);
                 funcResponse(dbEntries);
                 return true; // indicate asynchronous response
             } else if (objRequest.strMessage === 'youtubeLookup') {
-                console.log('[Youtube Watchmarker Background] Received youtubeLookup message:', objRequest);
                 if (objRequest.strTitle !== '') {
                     strTitlecache[objRequest.strIdent] = objRequest.strTitle;
                 }
@@ -1646,7 +1615,6 @@ Node.series({
                     'strIdent': objRequest.strIdent,
                     'strTitle': objRequest.strTitle
                 }, function(objResponse) {
-                    console.log('[Youtube Watchmarker Background] lookup video result:', objRequest, objResponse);
 
                     funcResponse(objResponse);
                 });
@@ -1678,24 +1646,19 @@ Node.series({
     },
     'objTabhook': function(objArgs, funcCallback) {
         chrome.tabs.onUpdated.addListener(function(intTab, objChange, objTab) {
-            console.log('[Youtube Watchmarker Background] Tab updated:', intTab, objChange, objTab);
             if (objTab.id < 0) {
-                console.log('[Youtube Watchmarker Background] Ignoring tab with negative ID');
                 return;
 
             } else if ((objTab.url.indexOf('https://www.youtube.com') !== 0) && (objTab.url.indexOf('https://m.youtube.com') !== 0)) {
-                console.log('[Youtube Watchmarker Background] Ignoring non-YouTube URL:', objTab.url);
                 return;
 
             }
 
             if (window.localStorage.getItem('extensions.Youwatch.Condition.boolBrownav') === String(true)) {
-                console.log('[Youtube Watchmarker Background] Browser navigation tracking is enabled');
-                if ((objTab.url.indexOf('https://www.youtube.com/watch?v=') === 0) || 
+                if ((objTab.url.indexOf('https://www.youtube.com/watch?v=') === 0) ||
                     (objTab.url.indexOf('https://www.youtube.com/shorts/') === 0) || 
                     (objTab.url.indexOf('https://m.youtube.com/watch?v=') === 0) ||
                     (objTab.url.indexOf('https://m.youtube.com/watch?') === 0)) {
-                    console.log('[Youtube Watchmarker Background] YouTube video detected:', objTab.url);
                     if ((objChange.title !== undefined) && (objChange.title !== null)) {
                         if (objChange.title.slice(-10) === ' - YouTube') {
                             objChange.title = objChange.title.slice(0, -10)
@@ -1711,24 +1674,19 @@ Node.series({
                             strIdent = objTab.url.split('&')[0].slice(-11);
                         }
                         
-                        console.log('[Youtube Watchmarker Background] Extracted video ID:', strIdent);
                         let strTitle = objChange.title;
                         
-                        console.log('[Youtube Watchmarker Background] Marking video as watched:', strIdent, strTitle);
 
                         Youtube.mark({
                             'strIdent': strIdent,
                             'strTitle': strTitle
                         }, function(objResponse) {
-                            console.log('[Youtube Watchmarker Background] Video marked as watched:', strIdent, objResponse);
                         });
 
                         chrome.tabs.query({
                             'url': '*://*.youtube.com/*'
                         }, function(objTabs) {
-                            console.log('[Youtube Watchmarker Background] Notifying', objTabs.length, 'YouTube tabs about watched video');
                             for (let objTab of objTabs) {
-                                console.log('[Youtube Watchmarker Background] Sending youtubeMark message to tab:', objTab.id);
                                 funcSendmessage(objTab.id, {
                                     'strMessage': 'youtubeMark',
                                     'strIdent': strIdent,
