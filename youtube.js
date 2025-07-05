@@ -6,6 +6,26 @@ let objObservers = new WeakMap();
 let isRefreshing = false; // Guard against infinite loops
 let lastRefreshTime = 0; // Throttle refreshes
 
+// Simple log function that logs to both console and localStorage
+function log(message) {
+    // Log to console
+    console.log(message);
+    
+    // Get existing logs
+    let logs = JSON.parse(localStorage.getItem('youwatch_debug_logs') || '[]');
+    
+    // Add timestamp and new log
+    logs.push(new Date().toISOString() + ': ' + message);
+    
+    // Keep only the last 5000 logs
+    if (logs.length > 5000) {
+        logs = logs.slice(-5000);
+    }
+    
+    // Save back to localStorage
+    localStorage.setItem('youwatch_debug_logs', JSON.stringify(logs));
+}
+
 // ##########################################################
 
 let videos = function(strIdent) {
@@ -41,7 +61,7 @@ let videos = function(strIdent) {
         
         // Only log if we found matches
         if (Object.keys(selectorCounts).length > 0) {
-            console.log('SELECTORS for ' + strIdent + ': ' + JSON.stringify(selectorCounts));
+            log('SELECTORS for ' + strIdent + ': ' + JSON.stringify(selectorCounts));
         }
     }
     
@@ -208,7 +228,7 @@ chrome.runtime.onMessage.addListener(function(objData, objSender, funcResponse) 
     } else if (objData.strMessage === 'youtubeMark') {
         // Get the title if available
         let videoTitle = objData.strTitle || '';
-        console.log('MARKED VIDEO: ' + objData.strIdent + ' - Title: ' + videoTitle);
+        log('MARKED VIDEO: ' + objData.strIdent + ' - Title: ' + videoTitle);
         
         intWatchdate[objData.strIdent] = objData.intTimestamp;
 
@@ -220,7 +240,7 @@ chrome.runtime.onMessage.addListener(function(objData, objSender, funcResponse) 
     } else if (objData.strMessage === 'youtubeLogCondition') {
         // Use the title if provided in the message
         let titleInfo = objData.strTitle ? ' - Title: ' + objData.strTitle : '';
-        console.log('CONDITION: ' + objData.condition + ' - Video ID: ' + objData.strIdent + titleInfo);
+        log('CONDITION: ' + objData.condition + ' - Video ID: ' + objData.strIdent + titleInfo);
     }
 
     funcResponse(null);
