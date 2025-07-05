@@ -20,7 +20,7 @@
 
     "applications": {
         "gecko": {
-            "id": "youtube-watchmarker-android-fork",
+            "id": "{92b2dc62-2aab-40ef-8a70-484647d54381}",
             "strict_min_version": "60.0"
         }
     },
