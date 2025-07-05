@@ -691,7 +691,9 @@ jQuery(window.document).ready(function() {
 
     objSearch.onMessage.addListener(function(objData) {
         if (objData.strMessage === 'searchLookup') {
+            console.log('[Youtube Watchmarker Options] Received search results:', objData.objResponse);
             if (objData.objResponse === null) {
+                console.log('[Youtube Watchmarker Options] No search results received');
                 return;
             }
 
