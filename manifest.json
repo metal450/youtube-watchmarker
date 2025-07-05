@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
 
-    "name": "Youtube Watchmarker",
+    "name": "Youtube Watchmarker Android Fork",
     "description": "Automatically mark videos on Youtube that you have already watched.",
     "homepage_url": "https://sniklaus.com/",
 
@@ -20,7 +20,7 @@
 
     "applications": {
         "gecko": {
-            "id": "yourect@coderect.com",
+            "id": "youtube-watchmarker-android-fork",
             "strict_min_version": "60.0"
         }
     },
