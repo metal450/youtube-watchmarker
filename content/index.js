@@ -73,9 +73,8 @@ jQuery(window.document).ready(function() {
                     .text('finished exporting database')
                 ;
                 
-                // Check if we're on Android by looking for touch events
-                const isAndroid = 'ontouchstart' in window && 
-                                  navigator.userAgent.toLowerCase().indexOf('android') > -1;
+                // Check if we're on Android
+                const isAndroid = navigator.userAgent.toLowerCase().indexOf('android') > -1;
                 
                 // Show download button for Android
                 if (isAndroid) {
@@ -85,55 +84,22 @@ jQuery(window.document).ready(function() {
                             .insertBefore('#idLoading_Close')
                             .on('click', function() {
                                 // Get the export data from localStorage
-                                const exportData = localStorage.getItem('pendingExport');
+                                const blobUrl = localStorage.getItem('pendingExport');
                                 const filename = localStorage.getItem('pendingExportFilename');
                                 
-                                if (exportData && filename) {
-                                    // Function to safely decode base64 to binary
-                                    function base64ToBinary(base64) {
-                                        const raw = atob(base64);
-                                        const rawLength = raw.length;
-                                        const array = new Uint8Array(new ArrayBuffer(rawLength));
-                                        
-                                        for(let i = 0; i < rawLength; i++) {
-                                            array[i] = raw.charCodeAt(i);
-                                        }
-                                        return array;
-                                    }
+                                if (blobUrl && filename) {
+                                    // Create a download link
+                                    const a = document.createElement('a');
+                                    a.href = blobUrl;
+                                    a.download = filename;
+                                    a.style.display = 'none';
+                                    document.body.appendChild(a);
+                                    a.click();
                                     
-                                    // Create a blob URL for the download with proper binary data
-                                    const blob = new Blob([base64ToBinary(exportData)], {type: 'application/octet-stream'});
-                                    const downloadUrl = URL.createObjectURL(blob);
-                                    
-                                    // Create a temporary element to hold our download link
-                                    const container = document.createElement('div');
-                                    container.innerHTML = `
-                                        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 9999; padding: 20px; text-align: center;">
-                                            <h2>Download Database</h2>
-                                            <p>Click the link below to download your database file:</p>
-                                            <p><a href="${downloadUrl}" download="${filename}" style="display: inline-block; padding: 10px 20px; background: #4285f4; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">Download ${filename}</a></p>
-                                            <p style="margin-top: 20px;"><button id="closeDownload" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Close</button></p>
-                                        </div>
-                                    `;
-                                    
-                                    // Add to document
-                                    document.body.appendChild(container);
-                                    
-                                    // Add close button handler
-                                    document.getElementById('closeDownload').addEventListener('click', function() {
-                                        document.body.removeChild(container);
-                                        // Clean up the blob URL to prevent memory leaks
-                                        URL.revokeObjectURL(downloadUrl);
-                                    });
-                                    
-                                    // Also add a click handler to the download link to revoke the URL after download
-                                    const downloadLink = container.querySelector('a');
-                                    downloadLink.addEventListener('click', function() {
-                                        // Give the browser some time to start the download before revoking
-                                        setTimeout(() => {
-                                            URL.revokeObjectURL(downloadUrl);
-                                        }, 1000);
-                                    });
+                                    // Clean up
+                                    setTimeout(function() {
+                                        document.body.removeChild(a);
+                                    }, 100);
                                 }
                             });
                     } else {
