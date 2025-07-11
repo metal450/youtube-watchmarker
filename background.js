@@ -410,18 +410,6 @@ let Database = {
                             'intCount': objArgs.objVideo.intCount || 1,
                             'strSource': 'Import - ' + funcDeviceIdentifier()
                         });
-
-                    } else if ((objQuery.result !== undefined) && (objQuery.result !== null)) {
-                        objArgs.intExisting += 1;
-
-                        return funcCallback({
-                            'strIdent': objQuery.result.strIdent,
-                            'intTimestamp': Math.max(objQuery.result.intTimestamp, objArgs.objVideo.intTimestamp) || new Date().getTime(),
-                            'strTitle': objQuery.result.strTitle || objArgs.objVideo.strTitle || '',
-                            'intCount': Math.max(objQuery.result.intCount, objArgs.objVideo.intCount) || 1,
-                            'strSource': (objQuery.result.strSource || objArgs.objVideo.strSource || 'History') + ' - ' + funcDeviceIdentifier()
-                        });
-
                     }
                 };
             },
@@ -612,18 +600,6 @@ let History = {
                             'strTitle': objArgs.objVideo.strTitle || '',
                             'intCount': objArgs.objVideo.intCount || 1
                         });
-
-                    } else if ((objQuery.result !== undefined) && (objQuery.result !== null)) {
-                        objArgs.intExisting += 1;
-
-                        return funcCallback({
-                            'strIdent': objQuery.result.strIdent,
-                            'intTimestamp': Math.max(objQuery.result.intTimestamp, objArgs.objVideo.intTimestamp) || new Date().getTime(),
-                            'strTitle': objQuery.result.strTitle || objArgs.objVideo.strTitle || '',
-                            'intCount': Math.max(objQuery.result.intCount, objArgs.objVideo.intCount) || 1,
-                            'strSource': (objQuery.result.strSource || objArgs.objVideo.strSource || 'History') + ' - ' + funcDeviceIdentifier()
-                        });
-
                     }
                 };
             },
@@ -929,18 +905,6 @@ let Youtube = {
                             'strTitle': objArgs.objVideo.strTitle || '',
                             'intCount': objArgs.objVideo.intCount || 1
                         });
-
-                    } else if ((objQuery.result !== undefined) && (objQuery.result !== null)) {
-                        objArgs.intExisting += 1;
-
-                        return funcCallback({
-                            'strIdent': objQuery.result.strIdent,
-                            'intTimestamp': objArgs.objVideo.intTimestamp || objQuery.result.intTimestamp || new Date().getTime(),
-                            'strTitle': objArgs.objVideo.strTitle || objQuery.result.strTitle || '',
-                            'intCount': objArgs.objVideo.intCount || objQuery.result.intCount || 1,
-                            'strSource': (objArgs.objVideo.strSource || objQuery.result.strSource || 'YouTube') + ' - ' + funcDeviceIdentifier()
-                        });
-
                     }
                 };
             },
