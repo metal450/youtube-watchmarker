@@ -2,14 +2,33 @@
 
 let funcBrowser = function() {
     if (typeof(browser) !== 'undefined') {
-        return 'firefox';
+        return 'Firefox';
     }
 
     if (typeof(chrome) !== 'undefined') {
-        return 'chrome';
+        return 'Chrome';
     }
 
     return null;
+};
+
+let funcDeviceIdentifier = function() {
+    let parts = [funcBrowser() || 'unknown'];
+    
+    if (typeof navigator !== 'undefined' && navigator.userAgent) {
+        const ua = navigator.userAgent;
+        const deviceMatch = ua.match(/\(([^)]+)\)/);
+        if (deviceMatch) {
+            const deviceInfo = deviceMatch[1].split(';')[0].trim();
+            if (deviceInfo) {
+                // Remove version numbers (e.g., "Android 13" -> "Android")
+                const cleanDeviceInfo = deviceInfo.replace(/\s+\d+(\.\d+)*\s*/g, ' ').trim();
+                parts.push(cleanDeviceInfo);
+            }
+        }
+    }
+    
+    return parts.join('-');
 };
 
 let funcHackyparse = function(strJson) {
@@ -211,7 +230,8 @@ let Database = {
                             'strIdent': record.strIdent,
                             'intTimestamp': record.intTimestamp || record.longTimestamp || new Date().getTime(),
                             'strTitle': record.strTitle || '',
-                            'intCount': record.intCount || 1
+                            'intCount': record.intCount || 1,
+                            'strSource': (record.strSource || 'Legacy - '+ funcDeviceIdentifier())
                         });
                         
                         putRequest.onsuccess = function() {
@@ -308,7 +328,8 @@ let Database = {
                         'strIdent': objQuery.result.value.strIdent,
                         'intTimestamp': objQuery.result.value.intTimestamp,
                         'strTitle': objQuery.result.value.strTitle,
-                        'intCount': objQuery.result.value.intCount
+                        'intCount': objQuery.result.value.intCount,
+                        'strSource': objQuery.result.value.strSource || 'n/a'
                     });
 
                     objQuery.result.continue();
@@ -386,7 +407,8 @@ let Database = {
                             'strIdent': objArgs.objVideo.strIdent,
                             'intTimestamp': objArgs.objVideo.intTimestamp || new Date().getTime(),
                             'strTitle': objArgs.objVideo.strTitle || '',
-                            'intCount': objArgs.objVideo.intCount || 1
+                            'intCount': objArgs.objVideo.intCount || 1,
+                            'strSource': 'Import - ' + funcDeviceIdentifier()
                         });
 
                     } else if ((objQuery.result !== undefined) && (objQuery.result !== null)) {
@@ -396,7 +418,8 @@ let Database = {
                             'strIdent': objQuery.result.strIdent,
                             'intTimestamp': Math.max(objQuery.result.intTimestamp, objArgs.objVideo.intTimestamp) || new Date().getTime(),
                             'strTitle': objQuery.result.strTitle || objArgs.objVideo.strTitle || '',
-                            'intCount': Math.max(objQuery.result.intCount, objArgs.objVideo.intCount) || 1
+                            'intCount': Math.max(objQuery.result.intCount, objArgs.objVideo.intCount) || 1,
+                            'strSource': (objQuery.result.strSource || objArgs.objVideo.strSource || 'History') + ' - ' + funcDeviceIdentifier()
                         });
 
                     }
@@ -545,7 +568,8 @@ let History = {
                             'strIdent': objResult.url.split('&')[0].slice(-11),
                             'intTimestamp': objResult.lastVisitTime,
                             'strTitle': objResult.title,
-                            'intCount': objResult.visitCount
+                            'intCount': objResult.visitCount,
+                            'strSource': 'History - ' + funcDeviceIdentifier()
                         });
                     }
 
@@ -596,7 +620,8 @@ let History = {
                             'strIdent': objQuery.result.strIdent,
                             'intTimestamp': Math.max(objQuery.result.intTimestamp, objArgs.objVideo.intTimestamp) || new Date().getTime(),
                             'strTitle': objQuery.result.strTitle || objArgs.objVideo.strTitle || '',
-                            'intCount': Math.max(objQuery.result.intCount, objArgs.objVideo.intCount) || 1
+                            'intCount': Math.max(objQuery.result.intCount, objArgs.objVideo.intCount) || 1,
+                            'strSource': (objQuery.result.strSource || objArgs.objVideo.strSource || 'History') + ' - ' + funcDeviceIdentifier()
                         });
 
                     }
@@ -683,7 +708,11 @@ let Youtube = {
                                 });
 
                             } else if (objData.strMessage === 'youtubeEnsure') {
-                                Youtube.ensure(objData.objRequest, function(objResponse) {
+                                Youtube.ensure({
+                                    'strIdent': objData.objRequest.strIdent,
+                                    'strTitle': objData.objRequest.strTitle,
+                                    'strSource': objData.objRequest.strSource || 'Progress'
+                                }, function(objResponse) {
                                     objPort.postMessage({
                                         'strMessage': 'youtubeEnsure',
                                         'objResponse': objResponse
@@ -691,7 +720,11 @@ let Youtube = {
                                 });
 
                             } else if (objData.strMessage === 'youtubeMark') {
-                                Youtube.mark(objData.objRequest, function(objResponse) {
+                                Youtube.mark({
+                                    'strIdent': objData.objRequest.strIdent,
+                                    'strTitle': objData.objRequest.strTitle,
+                                    'strSource': objData.objRequest.strSource || 'Direct'
+                                }, function(objResponse) {
                                     objPort.postMessage({
                                         'strMessage': 'youtubeMark',
                                         'objResponse': objResponse
@@ -810,7 +843,8 @@ let Youtube = {
                             'strIdent': strIdent,
                             'intTimestamp': null,
                             'strTitle': strTitle,
-                            'intCount': null
+                            'intCount': null,
+                            'strSource': 'YouTube - ' + funcDeviceIdentifier()
                         });
                     }
 
@@ -903,7 +937,8 @@ let Youtube = {
                             'strIdent': objQuery.result.strIdent,
                             'intTimestamp': objArgs.objVideo.intTimestamp || objQuery.result.intTimestamp || new Date().getTime(),
                             'strTitle': objArgs.objVideo.strTitle || objQuery.result.strTitle || '',
-                            'intCount': objArgs.objVideo.intCount || objQuery.result.intCount || 1
+                            'intCount': objArgs.objVideo.intCount || objQuery.result.intCount || 1,
+                            'strSource': (objArgs.objVideo.strSource || objQuery.result.strSource || 'YouTube') + ' - ' + funcDeviceIdentifier()
                         });
 
                     }
@@ -1021,7 +1056,8 @@ let Youtube = {
                             'strIdent': objArgs.objVideo.strIdent,
                             'intTimestamp': objArgs.objVideo.intTimestamp || new Date().getTime(),
                             'strTitle': objArgs.objVideo.strTitle || '',
-                            'intCount': objArgs.objVideo.intCount || 1
+                            'intCount': objArgs.objVideo.intCount || 1,
+                            'strSource': (objArgs.objVideo.strSource || 'Progress - ' + funcDeviceIdentifier())
                         });
                     }
 
@@ -1082,7 +1118,8 @@ let Youtube = {
                             'strIdent': objArgs.objVideo.strIdent,
                             'intTimestamp': objArgs.objVideo.intTimestamp || new Date().getTime(),
                             'strTitle': objArgs.objVideo.strTitle || '',
-                            'intCount': objQuery.count + 1
+                            'intCount': objQuery.count + 1,
+                            'strSource': (objArgs.objVideo.strSource || 'Direct - ' + funcDeviceIdentifier())
                         });
                     }
 
@@ -1203,7 +1240,8 @@ let Search = {
                                 'strIdent': objQuery.result.value.strIdent,
                                 'intTimestamp': objQuery.result.value.intTimestamp,
                                 'strTitle': objQuery.result.value.strTitle,
-                                'intCount': objQuery.result.value.intCount
+                                'intCount': objQuery.result.value.intCount,
+                                'strSource': objQuery.result.value.strSource || 'n/a'
                             });
 
                         }
@@ -1645,7 +1683,8 @@ Node.series({
 
                 Youtube.ensure({
                     'strIdent': objRequest.strIdent,
-                    'strTitle': objRequest.strTitle
+                    'strTitle': objRequest.strTitle,
+                    'strSource': 'Progress - ' + funcDeviceIdentifier()
                 }, function(objResponse) {
                     console.debug('ensure video', objRequest, objResponse);
 
@@ -1690,7 +1729,8 @@ Node.series({
 
                         Youtube.mark({
                             'strIdent': strIdent,
-                            'strTitle': strTitle
+                            'strTitle': strTitle,
+                            'strSource': 'Navigation - ' + funcDeviceIdentifier()
                         }, function(objResponse) {
                             console.debug('mark video');
                         });
@@ -2006,7 +2046,8 @@ Node.series({
 
                     Youtube.ensure({
                         'strIdent': strIdent,
-                        'strTitle': strTitle
+                        'strTitle': strTitle,
+                        'strSource': 'Progress - ' + funcDeviceIdentifier()
                     }, function(objResponse) {
                         console.debug('ensure video');
                     });

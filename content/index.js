@@ -768,6 +768,15 @@ jQuery(window.document).ready(function() {
                                     .attr({
                                         'width': '1%'
                                     })
+                                    .css({
+                                        'text-align': 'center'
+                                    })
+                                    .text('Source')
+                                )
+                                .append(jQuery('<th></th>')
+                                    .attr({
+                                        'width': '1%'
+                                    })
                                 )
                             )
                         )
@@ -820,6 +829,15 @@ jQuery(window.document).ready(function() {
                                             'text-align': 'right'
                                         })
                                         .text(objVideo.intCount)
+                                    )
+                                )
+                                .append(jQuery('<td></td>')
+                                    .append(jQuery('<div></div>')
+                                        .css({
+                                            'white-space': 'nowrap',
+                                            'text-align': 'center'
+                                        })
+                                        .text(objVideo.strSource || 'ERROR')
                                     )
                                 )
                                 .append(jQuery('<td></td>')
