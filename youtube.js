@@ -55,7 +55,7 @@ let refresh = function() {
             }
         });
     }
-    
+
     strLastchange = window.location.href + ':' + window.document.title + ':' + objVideos.length;
 };
 
