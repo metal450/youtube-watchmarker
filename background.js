@@ -114,35 +114,48 @@ let Database = {
     init: function(objRequest, funcResponse) {
         Node.series({
             'objOpen': function(objArgs, funcCallback) {
-                let objOpen = window.indexedDB.open('Database', 401);
+                let objOpen = window.indexedDB.open('Database', 402);
 
                 objOpen.onupgradeneeded = function() {
                     let objStore = null;
+                    let oldData = [];
 
                     if (objOpen.result.objectStoreNames.contains('storeDatabase') === true) {
-                        objStore = objOpen.transaction.objectStore('storeDatabase');
+                        // For upgrades: backup data, delete store, recreate with autoIncrement
+                        let oldStore = objOpen.transaction.objectStore('storeDatabase');
+                        let cursor = oldStore.openCursor();
+                        
+                        cursor.onsuccess = function() {
+                            if (cursor.result) {
+                                oldData.push(cursor.result.value);
+                                cursor.result.continue();
+                            } else {
+                                // Data backed up, now recreate store
+                                objOpen.result.deleteObjectStore('storeDatabase');
+                                createNewStore();
+                            }
+                        };
+                    } else {
+                        createNewStore();
+                    }
 
-                    } else if (objOpen.result.objectStoreNames.contains('storeDatabase') === false) {
+                    function createNewStore() {
                         objStore = objOpen.result.createObjectStore('storeDatabase', {
-                            'keyPath': 'strIdent'
+                            'autoIncrement': true
                         });
 
-                    }
-
-                    if (objStore.indexNames.contains('strIdent') === false) {
                         objStore.createIndex('strIdent', 'strIdent', {
-                            'unique': true
+                            'unique': false
                         });
-                    }
 
-                    if (objStore.indexNames.contains('intTimestamp') === false) {
                         objStore.createIndex('intTimestamp', 'intTimestamp', {
                             'unique': false
                         });
-                    }
 
-                    if (objStore.indexNames.contains('longTimestamp') === true) {
-                        objStore.deleteIndex('longTimestamp'); // legacy
+                        // Store old data for migration
+                        if (oldData.length > 0) {
+                            Database.migrationData = oldData;
+                        }
                     }
                 };
 
@@ -179,6 +192,42 @@ let Database = {
 
                     objQuery.result.continue();
                 };
+            },
+            'objMigration402': function(objArgs, funcCallback) {
+                // Restore backed up data from upgrade
+                if (Database.migrationData && Database.migrationData.length > 0) {
+                    let objStore = Database.objDatabase.transaction(['storeDatabase'], 'readwrite').objectStore('storeDatabase');
+                    let dataToMigrate = Database.migrationData;
+                    let currentIndex = 0;
+
+                    function migrateNext() {
+                        if (currentIndex >= dataToMigrate.length) {
+                            Database.migrationData = null;
+                            return funcCallback({});
+                        }
+
+                        let record = dataToMigrate[currentIndex];
+                        let putRequest = objStore.put({
+                            'strIdent': record.strIdent,
+                            'intTimestamp': record.intTimestamp || record.longTimestamp || new Date().getTime(),
+                            'strTitle': record.strTitle || '',
+                            'intCount': record.intCount || 1
+                        });
+                        
+                        putRequest.onsuccess = function() {
+                            currentIndex++;
+                            migrateNext();
+                        };
+                        putRequest.onerror = function() {
+                            currentIndex++;
+                            migrateNext();
+                        };
+                    }
+
+                    migrateNext();
+                } else {
+                    return funcCallback({});
+                }
             },
             'objMessaging': function(objArgs, funcCallback) {
                 chrome.runtime.onConnect.addListener(function(objPort) {
@@ -1023,7 +1072,9 @@ let Youtube = {
                 return funcCallback(Database.objDatabase.transaction(['storeDatabase'], 'readwrite').objectStore('storeDatabase'));
             },
             'objGet': function(objArgs, funcCallback) {
-                let objQuery = objArgs.objDatabase.index('strIdent').get(objArgs.objVideo.strIdent);
+                // Always create new record for each watch (Option 3: store total count)
+                let objQuery = objArgs.objDatabase.index('strIdent').openCursor();
+                objQuery.count = 0;
 
                 objQuery.onsuccess = function() {
                     if ((objQuery.result === undefined) || (objQuery.result === null)) {
@@ -1031,18 +1082,14 @@ let Youtube = {
                             'strIdent': objArgs.objVideo.strIdent,
                             'intTimestamp': objArgs.objVideo.intTimestamp || new Date().getTime(),
                             'strTitle': objArgs.objVideo.strTitle || '',
-                            'intCount': objArgs.objVideo.intCount || 1
+                            'intCount': objQuery.count + 1
                         });
-
-                    } else if ((objQuery.result !== undefined) && (objQuery.result !== null)) {
-                        return funcCallback({
-                            'strIdent': objQuery.result.strIdent,
-                            'intTimestamp': objArgs.objVideo.intTimestamp || objQuery.result.intTimestamp || new Date().getTime(),
-                            'strTitle': objArgs.objVideo.strTitle || objQuery.result.strTitle || '',
-                            'intCount': objQuery.result.intCount + 1 || 1
-                        });
-
                     }
+
+                    if (objQuery.result.value.strIdent === objArgs.objVideo.strIdent) {
+                        objQuery.count += 1;
+                    }
+                    objQuery.result.continue();
                 };
             },
             'objPut': function(objArgs, funcCallback) {
@@ -1633,6 +1680,13 @@ Node.series({
 
                         let strIdent = objTab.url.split('&')[0].slice(-11);
                         let strTitle = objChange.title;
+
+                        // When we navigate to a video, ew capture the tab title change event,
+                        // but sometimes the title is just "YouTube" before the actual video title loads.
+                        // Skip logging in this case - we'll log later once the full title has loaded.
+                        if (strTitle === 'YouTube') {
+                            return
+                        }
 
                         Youtube.mark({
                             'strIdent': strIdent,

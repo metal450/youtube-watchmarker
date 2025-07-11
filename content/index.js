@@ -762,7 +762,7 @@ jQuery(window.document).ready(function() {
                                     .css({
                                         'text-align': 'right'
                                     })
-                                    .text('Visits')
+                                    .text('View')
                                 )
                                 .append(jQuery('<th></th>')
                                     .attr({
