@@ -31,6 +31,16 @@ jQuery(window.document).ready(function() {
         ;
     });
 
+    jQuery('[data-bs-toggle="tab"]').on('click', function(e) {
+        e.preventDefault();
+        
+        jQuery('.nav-link').removeClass('active');
+        jQuery('.tab-pane').removeClass('show active');
+        
+        jQuery(this).addClass('active');
+        jQuery(jQuery(this).attr('data-bs-target')).addClass('show active');
+    });
+
     jQuery('#idDatabase_Export')
         .on('click', function() {
             jQuery('#idLoading_Container')
